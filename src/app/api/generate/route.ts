@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { openai } from "@/lib/openai";
-import { prisma } from "@/lib/prisma";
+import { getOpenAI } from "@/lib/openai";
+import { getPrisma } from "@/lib/prisma";
+
+export const dynamic = "force-dynamic";
+
+const styleGuide: Record<string, string> = {
+  creative: "creative, unique, memorable, playful names that stand out",
+  professional: "professional, trustworthy, authoritative names that convey expertise",
+  tech: "modern, tech-savvy, innovative names with digital appeal",
+  friendly: "warm, approachable, friendly names that feel welcoming",
+  minimal: "short, minimal, clean names that are easy to remember (1-2 syllables preferred)",
+};
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,14 +22,6 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-
-    const styleGuide: Record<string, string> = {
-      creative: "creative, unique, memorable, playful names that stand out",
-      professional: "professional, trustworthy, authoritative names that convey expertise",
-      tech: "modern, tech-savvy, innovative names with digital appeal",
-      friendly: "warm, approachable, friendly names that feel welcoming",
-      minimal: "short, minimal, clean names that are easy to remember (1-2 syllables preferred)",
-    };
 
     const selectedStyle = styleGuide[style] || styleGuide.creative;
 
@@ -52,7 +54,7 @@ Respond in this exact JSON format:
   ]
 }`;
 
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAI().chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         {
@@ -69,8 +71,8 @@ Respond in this exact JSON format:
     const parsed = JSON.parse(content);
     const names = parsed.names || [];
 
-    // Save to DB (fire and forget, don't block response)
-    prisma.nameGeneration
+    // Save to DB (fire and forget)
+    getPrisma().nameGeneration
       .create({
         data: {
           industry: industry || "General",
